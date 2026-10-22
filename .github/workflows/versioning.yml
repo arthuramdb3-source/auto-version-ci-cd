@@ -1,0 +1,43 @@
+
+name: Automatic Versioning
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    if: "!contains(github.event.head_commit.message, '[skip version]')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+
+      - name: Increment version
+        run: |
+          VERSION=$(cat version.txt)
+          VERSION=${VERSION#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          PATCH=$((PATCH + 1))
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo -n "$NEW_VERSION" > version.txt
+          echo "Nova versao: $NEW_VERSION"
+
+      - name: Commit and push version
+        run: |
+          git add version.txt
+          git commit -m "CI Bot: incrementa versao [skip version]"
+          git push
+
